@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# vim: set ts=2 sw=2 tw=0 fo=cnqoj
+version: 1
+
+before:
+  hooks:
+    - go mod tidy
+    - go generate ./...
+    - ./scripts/download-rsp-registry.py
+
+builds:
+  - id: rsp-dump
+    main: ./cmd/rsp-dump
+    binary: rsp-dump
+    goos: [ linux ]
+    goarch: [ amd64, arm64 ]
+    env: [ CGO_ENABLED=0 ]
+    flags: [ -trimpath ]
+    ldflags: [ -s -w ]
+  - id: rsp-dump-aws-lambda
+    main: ./cmd/rsp-dump-aws-lambda
+    binary: bootstrap
+    goos: [ linux ]
+    goarch: [ amd64 ]
+    env: [ CGO_ENABLED=0 ]
+    flags: [ -trimpath ]
+    ldflags: [ -s -w ]
+
+archives:
+  - id: rsp-dump
+    format: tar.gz
+    builds: [ rsp-dump ]
+    name_template: "rsp-dump_{{ .Version }}_{{ .Arch }}"
+    wrap_in_directory: true
+    files: [ rsp-*.json ]
+  - id: rsp-dump-aws-lambda
+    format: zip
+    builds: [ rsp-dump-aws-lambda ]
+    name_template: "rsp-dump-aws-lambda_{{ .Version }}_{{ .Arch }}"
+    files: [ rsp-*.json ]
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"

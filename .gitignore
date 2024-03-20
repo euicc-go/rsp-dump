@@ -1,0 +1,11 @@
+/.venv
+/.idea
+/dist
+
+/*.DS_Store
+
+/rsp-registry*.json
+/rsp-config*.json
+/rsp-report*.log
+
+*.pem

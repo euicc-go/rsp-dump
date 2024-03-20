@@ -1,0 +1,29 @@
+{{- $matchingId := .MatchingID -}}
+{{- $issuerHost := .IssuerHost -}}
+{{- $usedIssuer := .UsedIssuer  -}}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ .Subject }}</title>
+</head>
+<body>
+<p>EID: <code>{{ .EID }}</code></p>
+<p>Issuer: <code>{{ .UsedIssuer }}</code></p>
+<p>Free NVRAM: {{ printf "%.2f" .FreeNVRAM }} KiB</p>
+<p>SGP.22 Version: {{ .EUICCInfo2.SVN }}</p>
+<p>SAS Accreditation Number: {{ .EUICCInfo2.SASAccreditationNumber }}</p>
+<p></p>
+{{- if eq (len .EUICCInfo2.IssuerSigning) 1 }}
+<p>This is all the information about this card</p>
+{{- else }}
+<p>If you need to download other CIs, please run:</p>
+<p></p>
+{{- range $index, $issuer := .EUICCInfo2.IssuerSigning }}
+{{- if eq $issuer.String $usedIssuer }}{{ continue }}{{ end }}
+{{- $server := slice $issuer.String 0 6 | printf $issuerHost | printf "%q" }}
+<p><code>./lpac profile download -s {{ $server }}{{- with $matchingId}} -m {{ . | printf "%q" -}} {{- end -}}</code></p>
+{{- end }}
+{{- end }}
+</body>
+</html>
