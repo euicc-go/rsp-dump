@@ -4,7 +4,6 @@ import (
 	"errors"
 	"github.com/CursedHardware/go-rsp-dump/bertlv"
 	"github.com/CursedHardware/go-rsp-dump/rsp/dump"
-	"gopkg.in/mail.v2"
 	"strings"
 )
 
@@ -17,16 +16,8 @@ func onAuthenClient(response *bertlv.TLV) (err error) {
 	message.SetHeaders(config.SMTPHeaders)
 	if strings.Contains(report.MatchingID, "@") {
 		message.SetHeader("To", report.MatchingID)
-	}
-	if isRecipients(message) == 0 {
-		return errors.New("no recipients, please set email address in matching-id")
+	} else {
+		return errors.New("no recipient, please set email address in matching-id")
 	}
 	return smtpClient.DialAndSend(message)
-}
-
-func isRecipients(message *mail.Message) int {
-	to := message.GetHeader("To")
-	cc := message.GetHeader("Cc")
-	bcc := message.GetHeader("Bcc")
-	return len(to) + len(cc) + len(bcc)
 }
