@@ -49,6 +49,7 @@ type EUICCInfo2 struct {
 	Category                    string      `json:"category,omitempty"`
 	ForbiddenProfilePolicyRules []string    `json:"forbidden_profile_policy_rules,omitempty"`
 	SASAccreditationNumber      string      `json:"sas_accreditation_number,omitempty"`
+	CertificationDataObject     *CertData   `json:"certification_data_object,omitempty"`
 }
 
 func (e *EUICCInfo2) UnmarshalBerTLV(tlv *TLV) (err error) {
@@ -113,6 +114,12 @@ func (e *EUICCInfo2) UnmarshalBerTLV(tlv *TLV) (err error) {
 			"ppr2",
 		)
 	}
+	if certData := tlv.First(Tag{0xAC}); certData != nil {
+		info.CertificationDataObject = &CertData{
+			PlatformLabel:    strings.TrimSpace(string(certData.First(Tag{0x80}).Value)),
+			DiscoveryBaseURL: strings.TrimSpace(string(certData.First(Tag{0x81}).Value)),
+		}
+	}
 	*e = info
 	return nil
 }
@@ -144,4 +151,9 @@ func (h *HexString) MarshalJSON() (dst []byte, _ error) {
 
 func (h *HexString) String() string {
 	return hex.EncodeToString(*h)
+}
+
+type CertData struct {
+	PlatformLabel    string `json:"platform_label,omitempty"`
+	DiscoveryBaseURL string `json:"discovery_base_url,omitempty"`
 }
