@@ -2,11 +2,18 @@ package dump
 
 import (
 	"bytes"
+	"encoding/pem"
 	"os/exec"
 )
 
-func parseCertificate(data []byte) ([]byte, error) {
+func parseCertificate(data []byte) (output []byte) {
 	cmd := exec.Command("openssl", "x509", "-inform", "DER", "-text")
 	cmd.Stdin = bytes.NewReader(data)
-	return cmd.Output()
+	if output, _ = cmd.Output(); output == nil {
+		output = pem.EncodeToMemory(&pem.Block{
+			Type:  "CERTIFICATE",
+			Bytes: data,
+		})
+	}
+	return output
 }

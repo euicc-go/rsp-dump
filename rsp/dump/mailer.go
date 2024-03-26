@@ -11,7 +11,6 @@ import (
 	"gopkg.in/mail.v2"
 	"html/template"
 	"io"
-	"strings"
 )
 
 //go:embed mail-tpl.gohtml
@@ -19,9 +18,6 @@ var mailTemplate string
 
 func NewMailMessage(report *Report, issuerDomain string) *mail.Message {
 	message := mail.NewMessage()
-	if strings.Contains(report.MatchingID, "@") {
-		message.SetHeader("To", report.MatchingID)
-	}
 	if info2, _ := json.MarshalIndent(&report.EUICCInfo2, "", "  "); info2 != nil {
 		message.AttachReader("EUICCInfo2.json", bytes.NewReader(info2), mail.SetHeader(map[string][]string{
 			"Content-Type": {"text/plain"},
@@ -29,7 +25,7 @@ func NewMailMessage(report *Report, issuerDomain string) *mail.Message {
 	}
 	var eid, issuer string
 	if data, _ := report.EUICCCertificate.MarshalBerTLV(); data != nil {
-		opensslParsed, _ := parseCertificate(data)
+		opensslParsed := parseCertificate(data)
 		filename := fmt.Sprintf("EUICC-%02x.pem", sha1.Sum(data))
 		if parsed, _ := x509.ParseCertificate(data); parsed != nil {
 			eid = parsed.Subject.SerialNumber
@@ -40,7 +36,7 @@ func NewMailMessage(report *Report, issuerDomain string) *mail.Message {
 		}))
 	}
 	if data, _ := report.EUMCertificate.MarshalBerTLV(); data != nil {
-		opensslParsed, _ := parseCertificate(data)
+		opensslParsed := parseCertificate(data)
 		filename := fmt.Sprintf("EUM-%02x.pem", sha1.Sum(data))
 		if parsed, _ := x509.ParseCertificate(data); parsed != nil {
 			issuer = hex.EncodeToString(parsed.AuthorityKeyId)
