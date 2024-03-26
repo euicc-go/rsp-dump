@@ -50,6 +50,9 @@ type EUICCInfo2 struct {
 	ForbiddenProfilePolicyRules []string    `json:"forbidden_profile_policy_rules,omitempty"`
 	SASAccreditationNumber      string      `json:"sas_accreditation_number,omitempty"`
 	CertificationDataObject     *CertData   `json:"certification_data_object,omitempty"`
+	TreProperties               []string    `json:"tre_properties,omitempty"`
+	TreProductReference         string      `json:"tre_product_reference,omitempty"`
+	ProfilePackageVersions      []Version   `json:"additional_euicc_profile_package_versions,omitempty"`
 }
 
 func (e *EUICCInfo2) UnmarshalBerTLV(tlv *TLV) (err error) {
@@ -118,6 +121,18 @@ func (e *EUICCInfo2) UnmarshalBerTLV(tlv *TLV) (err error) {
 		info.CertificationDataObject = &CertData{
 			PlatformLabel:    strings.TrimSpace(string(certData.First(Tag{0x80}).Value)),
 			DiscoveryBaseURL: strings.TrimSpace(string(certData.First(Tag{0x81}).Value)),
+		}
+	}
+	if properties := tlv.First(Tag{0xAD}); properties != nil {
+		info.TreProperties = properties.BitString("isDiscrete", "isIntegrated", "usesRemoteMemory")
+	}
+	if reference := tlv.First(Tag{0xAE}); reference != nil {
+		info.TreProductReference = strings.TrimSpace(string(reference.Value))
+	}
+	if versions := tlv.First(Tag{0xAF}); versions != nil {
+		info.ProfilePackageVersions = make([]Version, len(versions.Children))
+		for index, version := range versions.Children {
+			info.ProfilePackageVersions[index] = Version(version.Value)
 		}
 	}
 	*e = info
