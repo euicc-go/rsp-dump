@@ -8,7 +8,7 @@
 <title>{{ .Subject }}</title>
 </head>
 <body>
-<p>EID: <code>{{ .EID }}</code></p>
+<p>EID: <code>{{ slice .EID 0 8 }} {{ slice .EID 8 12 }} {{ slice .EID 12 16 }} {{ slice .EID 16 20 }} {{ slice .EID 20 }}</code></p>
 <p>Issuer: <code>{{ .UsedIssuer }}</code></p>
 <p>Free NVRAM: {{ printf "%.2f" .FreeNVRAM }} KiB</p>
 <p>SGP.22 Version: {{ .EUICCInfo2.SVN }}</p>
