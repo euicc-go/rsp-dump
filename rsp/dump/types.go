@@ -36,23 +36,24 @@ func (r *Report) UnmarshalBerTLV(response *TLV) (err error) {
 }
 
 type EUICCInfo2 struct {
-	ProfileVersion              Version     `json:"profile_version,omitempty"`
-	SVN                         Version     `json:"sgp22_version_supported,omitempty"`
-	FirmwareVersion             Version     `json:"euicc_firmware_version,omitempty"`
-	FreeNVRAM                   uint32      `json:"free_nvram,omitempty"`
-	UICCCapability              []string    `json:"uicc_capability,omitempty"`
-	TS102241Version             Version     `json:"ts102241_version,omitempty"`
-	GlobalPlatformVersion       Version     `json:"gp_version,omitempty"`
-	RSPCapability               []string    `json:"rsp_capability,omitempty"`
-	IssuerVerification          []HexString `json:"issuer_for_verification,omitempty"`
-	IssuerSigning               []HexString `json:"issuer_for_signing,omitempty"`
-	Category                    string      `json:"category,omitempty"`
-	ForbiddenProfilePolicyRules []string    `json:"forbidden_profile_policy_rules,omitempty"`
-	SASAccreditationNumber      string      `json:"sas_accreditation_number,omitempty"`
-	CertificationDataObject     *CertData   `json:"certification_data_object,omitempty"`
-	TreProperties               []string    `json:"tre_properties,omitempty"`
-	TreProductReference         string      `json:"tre_product_reference,omitempty"`
-	ProfilePackageVersions      []Version   `json:"additional_euicc_profile_package_versions,omitempty"`
+	ProfileVersion              Version         `json:"profileVersion,omitempty"`
+	SVN                         Version         `json:"svn,omitempty"`
+	FirmwareVersion             Version         `json:"euiccFirmwareVer,omitempty"`
+	ExtCardResource             ExtCardResource `json:"extCardResource,omitempty"`
+	UICCCapability              []string        `json:"uiccCapability,omitempty"`
+	TS102241Version             Version         `json:"ts102241Version,omitempty"`
+	GlobalPlatformVersion       Version         `json:"globalplatformVersion,omitempty"`
+	RSPCapability               []string        `json:"rspCapability,omitempty"`
+	IssuerVerification          []HexString     `json:"euiccCiPKIdListForVerification,omitempty"`
+	IssuerSigning               []HexString     `json:"euiccCiPKIdListForSigning,omitempty"`
+	Category                    string          `json:"euiccCategory,omitempty"`
+	ForbiddenProfilePolicyRules []string        `json:"forbiddenProfilePolicyRules,omitempty"`
+	ProtectionProfileVersion    Version         `json:"ppVersion,omitempty"`
+	SASAccreditationNumber      string          `json:"sasAccreditationNumber,omitempty"`
+	CertificationDataObject     *CertData       `json:"certificationDataObject,omitempty"`
+	TreProperties               []string        `json:"treProperties,omitempty"`
+	TreProductReference         string          `json:"treProductReference,omitempty"`
+	ProfilePackageVersions      []Version       `json:"additionalEuiccProfilePackageVersions,omitempty"`
 }
 
 func (e *EUICCInfo2) UnmarshalBerTLV(tlv *TLV) (err error) {
@@ -64,16 +65,15 @@ func (e *EUICCInfo2) UnmarshalBerTLV(tlv *TLV) (err error) {
 		SASAccreditationNumber: strings.TrimSpace(string(tlv.First(Tag{0x0C}).Value)),
 	}
 	if resource := tlv.First(Tag{0x84}); resource != nil {
-		// ExtCardResource
-		for i := 0; i < len(resource.Value); {
-			tag := resource.Value[i]
-			length := int(resource.Value[i+1])
-			value := resource.Value[i+2 : i+length+2]
-			if tag == 0x82 {
-				info.FreeNVRAM = binary.BigEndian.Uint32(value)
-				break
-			}
-			i += length + 2
+		data, _ := resource.MarshalBerTLV()
+		data[0] = 0x30
+		if _, err = resource.UnmarshalBerTLV(data); err != nil {
+			return
+		}
+		info.ExtCardResource = ExtCardResource{
+			InstallApps: resource.First(Tag{0x81}).Value[0],
+			FreeNVRAM:   binary.BigEndian.Uint32(resource.First(Tag{0x82}).Value),
+			FreeRAM:     binary.BigEndian.Uint32(resource.First(Tag{0x83}).Value),
 		}
 	}
 	info.UICCCapability = tlv.First(Tag{0x85}).BitString(
@@ -116,6 +116,9 @@ func (e *EUICCInfo2) UnmarshalBerTLV(tlv *TLV) (err error) {
 			"ppr1",
 			"ppr2",
 		)
+	}
+	if ppVersion := tlv.First(Tag{0x04}); ppVersion != nil {
+		info.ProtectionProfileVersion = Version(ppVersion.Value)
 	}
 	if certData := tlv.First(Tag{0xAC}); certData != nil {
 		info.CertificationDataObject = &CertData{
@@ -168,7 +171,13 @@ func (h *HexString) String() string {
 	return hex.EncodeToString(*h)
 }
 
+type ExtCardResource struct {
+	InstallApps uint8  `json:"installApps,omitempty"`
+	FreeNVRAM   uint32 `json:"freeNVRAM,omitempty"`
+	FreeRAM     uint32 `json:"freeRAM,omitempty"`
+}
+
 type CertData struct {
-	PlatformLabel    string `json:"platform_label,omitempty"`
-	DiscoveryBaseURL string `json:"discovery_base_url,omitempty"`
+	PlatformLabel    string `json:"platformLabel,omitempty"`
+	DiscoveryBaseURL string `json:"discoveryBaseURL,omitempty"`
 }

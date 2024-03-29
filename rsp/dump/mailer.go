@@ -68,7 +68,7 @@ func NewMailMessage(report *Report, issuerDomain string) *mail.Message {
 		data.EID = eid
 		data.UsedIssuer = issuer
 		data.IssuerHost = issuerDomain
-		data.FreeNVRAM = float64(report.EUICCInfo2.FreeNVRAM) / 1024
+		data.FreeNVRAM = float64(report.EUICCInfo2.ExtCardResource.FreeNVRAM) / 1024
 		data.Report = report
 		return tpl.Execute(w, data)
 	})
