@@ -1,7 +1,6 @@
 package dump
 
 import (
-	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -71,9 +70,9 @@ func (e *EUICCInfo2) UnmarshalBerTLV(tlv *TLV) (err error) {
 			return
 		}
 		info.ExtCardResource = ExtCardResource{
-			InstallApps: resource.First(Tag{0x81}).Value[0],
-			FreeNVRAM:   binary.BigEndian.Uint32(resource.First(Tag{0x82}).Value),
-			FreeRAM:     binary.BigEndian.Uint32(resource.First(Tag{0x83}).Value),
+			InstallApps: variant(resource.First(Tag{0x81}).Value),
+			FreeNVRAM:   variant(resource.First(Tag{0x82}).Value),
+			FreeRAM:     variant(resource.First(Tag{0x83}).Value),
 		}
 	}
 	info.UICCCapability = tlv.First(Tag{0x85}).BitString(
@@ -172,9 +171,9 @@ func (h *HexString) String() string {
 }
 
 type ExtCardResource struct {
-	InstallApps uint8  `json:"installApps,omitempty"`
-	FreeNVRAM   uint32 `json:"freeNVRAM,omitempty"`
-	FreeRAM     uint32 `json:"freeRAM,omitempty"`
+	InstallApps uint64 `json:"installApps,omitempty"`
+	FreeNVRAM   uint64 `json:"freeNVRAM,omitempty"`
+	FreeRAM     uint64 `json:"freeRAM,omitempty"`
 }
 
 type CertData struct {

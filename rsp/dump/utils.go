@@ -2,6 +2,7 @@ package dump
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/pem"
 	"os/exec"
 )
@@ -16,4 +17,10 @@ func parseCertificate(data []byte) (output []byte) {
 		})
 	}
 	return output
+}
+
+func variant(b []byte) uint64 {
+	dst := make([]byte, 8)
+	copy(dst[8-len(b):], b)
+	return binary.BigEndian.Uint64(dst)
 }
