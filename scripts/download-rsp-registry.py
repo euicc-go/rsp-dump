@@ -11,6 +11,7 @@ EXCLUDE_ADDRESSES = {
     "rsp.esim.whty.com.cn",
     "rsp.esim.me:8083",
     "www.esimtest.chinattl.cn",
+    "smdp-plus-0.eu.cd.rsp.kigen.com",
 }
 
 

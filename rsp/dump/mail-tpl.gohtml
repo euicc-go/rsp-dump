@@ -8,8 +8,12 @@
 <title>{{ .Subject }}</title>
 </head>
 <body>
-<p>EID: <code>{{ slice .EID 0 8 }} {{ slice .EID 8 12 }} {{ slice .EID 12 16 }} {{ slice .EID 16 20 }} {{ slice .EID 20 }}</code></p>
-<p>Issuer: <code>{{ .UsedIssuer }}</code></p>
+{{- with .EID }}
+<p>EID: <code>{{ slice . 0 8 }} {{ slice . 8 12 }} {{ slice . 12 16 }} {{ slice . 16 20 }} {{ slice . 20 }}</code></p>
+{{- end }}
+{{- with .UsedIssuer }}
+<p>Issuer: <code>{{ . }}</code></p>
+{{- end }}
 <p>Free NVRAM: {{ printf "%.2f" .FreeNVRAM }} KiB</p>
 <p>SGP.22 Version: {{ .EUICCInfo2.SVN }}</p>
 <p>SAS Accreditation Number: {{ .EUICCInfo2.SASAccreditationNumber }}</p>
