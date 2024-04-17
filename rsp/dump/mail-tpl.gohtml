@@ -9,7 +9,7 @@
 </head>
 <body>
 {{- with .EID }}
-<p>EID: <code>{{ slice . 0 8 }} {{ slice . 8 12 }} {{ slice . 12 16 }} {{ slice . 16 20 }} {{ slice . 20 }}</code></p>
+<p>EID: <code>{{ slice . 0 8 }} {{ slice . 8 13 }} {{ slice . 13 18 }} {{ slice . 18 30 }} {{ slice . 30 }}</code></p>
 {{- end }}
 {{- with .UsedIssuer }}
 <p>Issuer: <code>{{ . }}</code></p>
