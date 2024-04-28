@@ -179,33 +179,42 @@ func (h *Handler) handleASN1(request *TLV) *TLV {
 }
 
 func (h *Handler) findHost(r *InitAuthenRequest) (issuer []byte, host string, err error) {
-	var issuerPrefix string
 	if h.HostPattern == nil {
-		goto bestMatching
+		return h.findBestMatchHost(r)
 	}
-	if matches := h.HostPattern.FindStringSubmatch(r.Address); matches != nil {
-		if index := h.HostPattern.SubexpIndex("issuer"); index != -1 {
-			issuerPrefix = strings.ToLower(matches[index])
-		}
+	index := h.HostPattern.SubexpIndex("issuer")
+	matches := h.HostPattern.FindStringSubmatch(r.Address)
+	if index == -1 || matches == nil {
+		return h.findBestMatchHost(r)
 	}
-	if len(issuerPrefix) == 0 {
-		goto bestMatching
-	}
-	for keyId, hosts := range h.Issuers {
-		if strings.HasPrefix(keyId, issuerPrefix) {
-			issuer, _ = hex.DecodeString(keyId)
-			host = hosts[rand.IntN(len(hosts))]
-			return
-		}
-	}
-bestMatching:
+	return h.findSpecificHost(strings.ToLower(matches[index]))
+}
+
+func (h *Handler) findBestMatchHost(r *InitAuthenRequest) (issuer []byte, host string, err error) {
+	err = errNotFound
 	for _, child := range r.Info1.First(Tag{0xAA}).Children {
 		if hosts, ok := h.Issuers[hex.EncodeToString(child.Value)]; ok {
 			issuer = child.Value
 			host = hosts[rand.IntN(len(hosts))]
+			err = nil
 			return
 		}
 	}
-	err = errors.New("No supported RSP server found")
+	return
+}
+
+func (h *Handler) findSpecificHost(prefix string) (issuer []byte, host string, err error) {
+	err = errNotFound
+	if len(prefix) == 0 {
+		return
+	}
+	for keyId, hosts := range h.Issuers {
+		if strings.HasPrefix(keyId, prefix) {
+			issuer, _ = hex.DecodeString(keyId)
+			host = hosts[rand.IntN(len(hosts))]
+			err = nil
+			return
+		}
+	}
 	return
 }
