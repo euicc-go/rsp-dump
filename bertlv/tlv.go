@@ -168,9 +168,9 @@ func (tlv *TLV) BitString(definitions ...string) (features []string) {
 		Bytes:     tlv.Value[1:],
 		BitLength: (len(tlv.Value)-1)*8 - int(tlv.Value[0]),
 	}
-	for i := 0; i < bits.BitLength; i++ {
-		if bits.At(i) == 1 {
-			features = append(features, definitions[i])
+	for index := 0; index < min(bits.BitLength, len(definitions)); index++ {
+		if bits.At(index) == 1 {
+			features = append(features, definitions[index])
 		}
 	}
 	return
