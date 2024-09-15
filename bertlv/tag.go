@@ -2,10 +2,27 @@ package bertlv
 
 import (
 	"encoding/hex"
+	"fmt"
 	"github.com/pkg/errors"
+	"math/bits"
 )
 
 type Tag []byte
+
+func NewTag(class Class, form Form, value uint64) Tag {
+	mask := byte(class)<<6 | byte(form)<<5
+	if value < 0x1f {
+		return Tag{mask ^ byte(value)}
+	}
+	tag := Tag{mask ^ 0x1f}
+	for index := bits.Len64(value) / 7; index >= 0; index-- {
+		if mask = byte((value >> (7 * index)) & 0x7f); index > 0 {
+			mask |= 0x80
+		}
+		tag = append(tag, mask)
+	}
+	return tag
+}
 
 func (t *Tag) UnmarshalBinary(b []byte) (err error) {
 	if b[0]&0x1F != 0x1F {
@@ -69,5 +86,31 @@ func (t *Tag) Class() Class {
 }
 
 func (t *Tag) String() string {
+	switch t.Class() {
+	case Universal:
+		return fmt.Sprintf("[Universal %d]", t.Value())
+	case Application:
+		return fmt.Sprintf("[Application %d]", t.Value())
+	case ContextSpecific:
+		return fmt.Sprintf("[%d]", t.Value())
+	case Private:
+		return fmt.Sprintf("[Private %d]", t.Value())
+	}
 	return hex.EncodeToString(*t)
+}
+
+func (t *Tag) Value() (value uint64) {
+	tag := *t
+	if value = uint64(tag[0] & 0x1f); value != 0x1f {
+		return
+	}
+	index := 1
+	for value = 0; ; index++ {
+		value <<= 7
+		value += uint64(tag[index] & 0x7f)
+		if tag[index]>>7 == 0 {
+			break
+		}
+	}
+	return
 }
