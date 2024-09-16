@@ -6,12 +6,14 @@ import (
 )
 
 func marshalLength(n int) []byte {
-	if n < 128 {
+	switch {
+	case n < 128:
 		return []byte{byte(n)}
-	} else if n < 256 {
+	case n < 256:
 		return []byte{0x81, byte(n)}
+	default:
+		return []byte{0x82, byte(n >> 8), byte(n)}
 	}
-	return []byte{0x82, byte(n >> 8), byte(n)}
 }
 
 func unmarshalLength(data []byte) (value, n int, err error) {
@@ -28,7 +30,7 @@ func unmarshalLength(data []byte) (value, n int, err error) {
 	} else {
 		err = errors.New("if length is greater than 127, first byte must indicate encoding of length")
 	}
-	if len(data)-n-1 < 0 {
+	if len(data)-min(n, 1) < 0 {
 		err = errors.Errorf("indicated length encoding with %d bytes, but following byte are missing", n)
 	}
 	return
