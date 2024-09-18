@@ -24,7 +24,7 @@ func NewMailMessage(report *Report, issuerDomain string) *mail.Message {
 		}))
 	}
 	var eid, issuer string
-	if data, _ := report.EUICCCertificate.MarshalBerTLV(); data != nil {
+	if data, _ := report.EUICCCertificate.MarshalBinary(); data != nil {
 		opensslParsed := parseCertificate(data)
 		filename := fmt.Sprintf("EUICC-%02x.pem", sha1.Sum(data))
 		if parsed, _ := x509.ParseCertificate(data); parsed != nil {
@@ -35,7 +35,7 @@ func NewMailMessage(report *Report, issuerDomain string) *mail.Message {
 			"Content-Type": {"text/plain"},
 		}))
 	}
-	if data, _ := report.EUMCertificate.MarshalBerTLV(); data != nil {
+	if data, _ := report.EUMCertificate.MarshalBinary(); data != nil {
 		opensslParsed := parseCertificate(data)
 		filename := fmt.Sprintf("EUM-%02x.pem", sha1.Sum(data))
 		if parsed, _ := x509.ParseCertificate(data); parsed != nil {

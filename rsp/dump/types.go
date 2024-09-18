@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	. "github.com/CursedHardware/go-rsp-dump/bertlv"
+	. "github.com/euicc-go/bertlv"
 	"strings"
 )
 
@@ -64,9 +64,9 @@ func (e *EUICCInfo2) UnmarshalBerTLV(tlv *TLV) (err error) {
 		SASAccreditationNumber: strings.TrimSpace(string(tlv.First(Tag{0x0C}).Value)),
 	}
 	if resource := tlv.First(Tag{0x84}); resource != nil {
-		data, _ := resource.MarshalBerTLV()
+		data, _ := resource.MarshalBinary()
 		data[0] = 0x30
-		if _, err = resource.UnmarshalBerTLV(data); err != nil {
+		if err = resource.UnmarshalBinary(data); err != nil {
 			return
 		}
 		info.ExtCardResource = ExtCardResource{
@@ -75,7 +75,7 @@ func (e *EUICCInfo2) UnmarshalBerTLV(tlv *TLV) (err error) {
 			FreeRAM:     variant(resource.First(Tag{0x83}).Value),
 		}
 	}
-	info.UICCCapability = tlv.First(Tag{0x85}).BitString(
+	info.UICCCapability = toBits(tlv.First(Tag{0x85}),
 		"Contactless Support", "USIM Support", "ISIM Support", "CSIM Support",
 		"DeviceInfo Extensibility Support",
 		"AkaMilenage", "AkaCave", "AkaTuak128", "AkaTuak256",
@@ -92,7 +92,7 @@ func (e *EUICCInfo2) UnmarshalBerTLV(tlv *TLV) (err error) {
 	if version := tlv.First(Tag{0x87}); version != nil {
 		info.GlobalPlatformVersion = Version(version.Value)
 	}
-	info.RSPCapability = tlv.First(Tag{0x88}).BitString(
+	info.RSPCapability = toBits(tlv.First(Tag{0x88}),
 		"additionalProfile",
 		"crlSupport",
 		"rpmSupport",
@@ -110,11 +110,7 @@ func (e *EUICCInfo2) UnmarshalBerTLV(tlv *TLV) (err error) {
 		info.Category = categories[category.Value[0]]
 	}
 	if ppr := tlv.First(Tag{0x99}); ppr != nil {
-		info.ForbiddenProfilePolicyRules = ppr.BitString(
-			"pprUpdateControl",
-			"ppr1",
-			"ppr2",
-		)
+		info.ForbiddenProfilePolicyRules = toBits(ppr, "pprUpdateControl", "ppr1", "ppr2")
 	}
 	if ppVersion := tlv.First(Tag{0x04}); ppVersion != nil {
 		info.ProtectionProfileVersion = Version(ppVersion.Value)
@@ -126,7 +122,7 @@ func (e *EUICCInfo2) UnmarshalBerTLV(tlv *TLV) (err error) {
 		}
 	}
 	if properties := tlv.First(Tag{0xAD}); properties != nil {
-		info.TreProperties = properties.BitString("isDiscrete", "isIntegrated", "usesRemoteMemory")
+		info.TreProperties = toBits(tlv, "isDiscrete", "isIntegrated", "usesRemoteMemory")
 	}
 	if reference := tlv.First(Tag{0xAE}); reference != nil {
 		info.TreProductReference = strings.TrimSpace(string(reference.Value))

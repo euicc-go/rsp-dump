@@ -6,8 +6,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	. "github.com/CursedHardware/go-rsp-dump/bertlv"
 	. "github.com/CursedHardware/go-rsp-dump/rsp/types"
+	. "github.com/euicc-go/bertlv"
 	"github.com/pkg/errors"
 	"log"
 	"math/rand/v2"
@@ -82,6 +82,7 @@ func (h *Handler) handleInitAuthen(r *InitAuthenRequest) (resp *InitAuthenRespon
 	if issuer, u.Host, err = h.findHost(r); err != nil {
 		return
 	}
+	fmt.Println(hex.EncodeToString(issuer))
 	svn := r.Info1.First(Tag{0x82})
 	r.Info1 = NewChildren(
 		r.Info1.Tag,
@@ -91,6 +92,7 @@ func (h *Handler) handleInitAuthen(r *InitAuthenRequest) (resp *InitAuthenRespon
 	)
 	r.Address = u.Host
 	body, _ := json.Marshal(r)
+	fmt.Println(string(body))
 	request, _ := http.NewRequest(http.MethodPost, u.String(), bytes.NewReader(body))
 	request.Header.Set("User-Agent", "gsma-rsp-lpad")
 	request.Header.Set("Content-Type", "application/json")
@@ -103,7 +105,7 @@ func (h *Handler) handleInitAuthen(r *InitAuthenRequest) (resp *InitAuthenRespon
 	if err = json.NewDecoder(response.Body).Decode(resp); err != nil {
 		return
 	}
-	if !bytes.Equal(issuer, resp.UsedIssuer.Value) {
+	if resp.UsedIssuer == nil || !bytes.Equal(issuer, resp.UsedIssuer.Value) {
 		err = fmt.Errorf("InitiateAuthenticationResponse: issuer is mismatch (%s)", r.Address)
 		return
 	}
@@ -117,7 +119,7 @@ func (h *Handler) handleInitAuthen(r *InitAuthenRequest) (resp *InitAuthenRespon
 }
 
 func (h *Handler) handleAuthenClient(r *AuthenClientRequest) (_ *GeneralResponse, err error) {
-	if data, _ := r.Response.MarshalBerTLV(); len(data) > 0 {
+	if data, _ := r.Response.MarshalBinary(); len(data) > 0 {
 		log.Println(
 			"ES9+.AuthenticateClientRequest",
 			"TransactionId:", r.TransactionId,
@@ -160,9 +162,13 @@ func (h *Handler) handleASN1(request *TLV) *TLV {
 		if err != nil {
 			return nil
 		}
+		transactionId, err := hex.DecodeString(authen.TransactionId)
+		if err != nil {
+			return nil
+		}
 		return NewChildren(Tag{0xBF, 0x39}, NewChildren(
 			Tag{0xA0},
-			NewValue(Tag{0x80}, []byte(authen.TransactionId)),
+			NewValue(Tag{0x80}, transactionId),
 			authen.Signed1,
 			authen.Signature1,
 			authen.UsedIssuer,
@@ -171,7 +177,7 @@ func (h *Handler) handleASN1(request *TLV) *TLV {
 	}
 	if r := request.First(Tag{0xBF, 0x3B}); r != nil {
 		_, _ = h.handleAuthenClient(&AuthenClientRequest{
-			TransactionId: string(r.First(Tag{0x80}).Value),
+			TransactionId: hex.EncodeToString(r.First(Tag{0x80}).Value),
 			Response:      r.First(Tag{0xBF, 0x38}),
 		})
 	}

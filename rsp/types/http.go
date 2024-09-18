@@ -1,6 +1,6 @@
 package types
 
-import . "github.com/CursedHardware/go-rsp-dump/bertlv"
+import . "github.com/euicc-go/bertlv"
 
 type GeneralResponse struct {
 	Header Header `json:"header"`

@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"encoding/base64"
 	"errors"
-	"github.com/CursedHardware/go-rsp-dump/bertlv"
 	"github.com/CursedHardware/go-rsp-dump/rsp/dump"
+	"github.com/euicc-go/bertlv"
 	"strings"
 )
 
@@ -17,9 +17,7 @@ func onAuthenClient(response *bertlv.TLV) (err error) {
 	message := dump.NewMailMessage(&report, config.HostTemplate)
 	message.SetHeaders(config.SMTPHeaders)
 	if !strings.Contains(report.MatchingID, "@") {
-		decoded, _ := base64.StdEncoding.
-			WithPadding(base64.NoPadding).
-			DecodeString(report.MatchingID)
+		decoded, _ := base64.RawStdEncoding.DecodeString(report.MatchingID)
 		if bytes.ContainsRune(decoded, '@') {
 			report.MatchingID = string(decoded)
 		}

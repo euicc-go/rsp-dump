@@ -9,6 +9,7 @@ import (
 	"gopkg.in/mail.v2"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"regexp"
@@ -55,15 +56,24 @@ func main() {
 	if logFile, err := os.OpenFile(config.LogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666); err == nil {
 		log.SetOutput(io.MultiWriter(os.Stdout, logFile))
 	}
-	var err error
-	if config.CertFile != "" && config.KeyFile != "" {
-		log.Println("Started with TLS,", strconv.Quote(config.Listen))
-		err = http.ListenAndServeTLS(config.Listen, config.CertFile, config.KeyFile, handler)
-	} else {
-		log.Println("Started,", strconv.Quote(config.Listen))
-		err = http.ListenAndServe(config.Listen, handler)
-	}
+	log.Println("Started,", strconv.Quote(config.Listen))
+	listener, err := net.Listen("tcp", config.Listen)
 	if err != nil {
+		log.Panicln(err)
+	}
+	defer listener.Close()
+	tlsConfig := &tls.Config{
+		NextProtos:   []string{"http/1.1"},
+		Certificates: []tls.Certificate{TestCI},
+	}
+	if config.CertFile != "" && config.KeyFile != "" {
+		tlsConfig.Certificates[0], err = tls.LoadX509KeyPair(config.CertFile, config.KeyFile)
+		if err != nil {
+			log.Panicln(err)
+		}
+	}
+	listener = tls.NewListener(listener, tlsConfig)
+	if err = http.Serve(listener, handler); err != nil {
 		log.Panicln(err)
 	}
 }
