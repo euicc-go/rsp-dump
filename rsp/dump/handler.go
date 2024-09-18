@@ -82,7 +82,6 @@ func (h *Handler) handleInitAuthen(r *InitAuthenRequest) (resp *InitAuthenRespon
 	if issuer, u.Host, err = h.findHost(r); err != nil {
 		return
 	}
-	fmt.Println(hex.EncodeToString(issuer))
 	svn := r.Info1.First(Tag{0x82})
 	r.Info1 = NewChildren(
 		r.Info1.Tag,
@@ -92,7 +91,6 @@ func (h *Handler) handleInitAuthen(r *InitAuthenRequest) (resp *InitAuthenRespon
 	)
 	r.Address = u.Host
 	body, _ := json.Marshal(r)
-	fmt.Println(string(body))
 	request, _ := http.NewRequest(http.MethodPost, u.String(), bytes.NewReader(body))
 	request.Header.Set("User-Agent", "gsma-rsp-lpad")
 	request.Header.Set("Content-Type", "application/json")
