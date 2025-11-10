@@ -6,15 +6,16 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	. "github.com/CursedHardware/go-rsp-dump/rsp/types"
-	. "github.com/euicc-go/bertlv"
-	"github.com/pkg/errors"
 	"log"
 	"math/rand/v2"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
+
+	. "github.com/CursedHardware/go-rsp-dump/rsp/types"
+	. "github.com/euicc-go/bertlv"
+	"github.com/pkg/errors"
 )
 
 type Handler struct {
@@ -22,7 +23,7 @@ type Handler struct {
 	Client         *http.Client
 	Issuers        map[string][]string
 	HostPattern    *regexp.Regexp
-	OnAuthenClient func(*TLV) error
+	OnAuthenClient func(*TLV, *http.Client) error
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -126,7 +127,7 @@ func (h *Handler) handleAuthenClient(r *AuthenClientRequest) (_ *GeneralResponse
 	}
 	switch response := r.Response.At(0); response.Tag[0] {
 	case 0xA0: // AuthenticateResponseOk
-		if err = h.OnAuthenClient(response); err == nil {
+		if err = h.OnAuthenClient(response, h.Client); err == nil {
 			err = errors.New("AuthenticateResponseOk: extract information finished")
 		}
 	case 0xA1: // AuthenticateResponseError

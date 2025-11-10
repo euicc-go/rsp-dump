@@ -1,0 +1,16 @@
+{
+  "name": "rsp-dump",
+  "main": "./build/worker.mjs",
+  "compatibility_date": "2025-11-10",
+  "build": {
+    "command": "yarn run build"
+  },
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true,
+      "persist": true
+    }
+}
+}

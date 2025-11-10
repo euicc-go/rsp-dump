@@ -1,4 +1,4 @@
-package dump
+package main
 
 import (
 	"bytes"
@@ -8,15 +8,18 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"gopkg.in/mail.v2"
 	"html/template"
 	"io"
+
+	"gopkg.in/mail.v2"
+
+	"github.com/CursedHardware/go-rsp-dump/rsp/dump"
 )
 
 //go:embed mail-tpl.gohtml
 var mailTemplate string
 
-func NewMailMessage(report *Report, issuerDomain string) *mail.Message {
+func NewMailMessage(report *dump.Report, issuerDomain string) *mail.Message {
 	message := mail.NewMessage()
 	if info2, _ := json.MarshalIndent(&report.EUICCInfo2, "", "  "); info2 != nil {
 		message.AttachReader("EUICCInfo2.json", bytes.NewReader(info2), mail.SetHeader(map[string][]string{
@@ -25,7 +28,7 @@ func NewMailMessage(report *Report, issuerDomain string) *mail.Message {
 	}
 	var eid, issuer string
 	if data, _ := report.EUICCCertificate.MarshalBinary(); data != nil {
-		opensslParsed := parseCertificate(data)
+		opensslParsed := dump.ParseCertificate(data)
 		filename := fmt.Sprintf("EUICC-%02x.pem", sha1.Sum(data))
 		if parsed, _ := x509.ParseCertificate(data); parsed != nil {
 			eid = parsed.Subject.SerialNumber
@@ -36,7 +39,7 @@ func NewMailMessage(report *Report, issuerDomain string) *mail.Message {
 		}))
 	}
 	if data, _ := report.EUMCertificate.MarshalBinary(); data != nil {
-		opensslParsed := parseCertificate(data)
+		opensslParsed := dump.ParseCertificate(data)
 		filename := fmt.Sprintf("EUM-%02x.pem", sha1.Sum(data))
 		if parsed, _ := x509.ParseCertificate(data); parsed != nil {
 			issuer = hex.EncodeToString(parsed.AuthorityKeyId)
@@ -62,7 +65,7 @@ func NewMailMessage(report *Report, issuerDomain string) *mail.Message {
 			UsedIssuer string
 			IssuerHost string
 			FreeNVRAM  float64
-			*Report
+			*dump.Report
 		})
 		data.Subject = subject
 		data.EID = eid
