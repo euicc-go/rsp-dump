@@ -42,7 +42,7 @@ class Manager:
         self._processed_files.add(path)
         return True
     
-    def batch_process(self, tasks: list[dict[str]]) -> None:
+    def batch_process(self, tasks: list[dict]) -> None:
         urls_to_download: set[str] = set()
         
         for task in tasks:
@@ -67,6 +67,9 @@ class Manager:
             if task["type"] == TaskType.single_content_multiple_files:
                 content = self._cache.get(task["url"])
                 if content:
+                    if "processor" in task:
+                        content = task["processor"](content)
+                    
                     for file_path in task["target_files"]:
                         path = Path(file_path)
                         self.write_file_if_missing(
@@ -78,6 +81,9 @@ class Manager:
                 for item in task["items"]:
                     content = self._cache.get(item["url"])
                     if content:
+                        if "processor" in task:
+                            content = task["processor"](content, item)
+                        
                         for file_pattern in task["target_patterns"]:
                             file_path = file_pattern.format(**item)
                             path = Path(file_path)
