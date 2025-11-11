@@ -9,3 +9,10 @@
 **/rsp-report.log
 
 *.pem
+
+node_modules
+.wrangler
+.yarn
+build
+
+scripts/__pycache__

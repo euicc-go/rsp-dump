@@ -2,12 +2,14 @@
 
 ## Environment Variables
 
-| Variable       | Description                          | Default                              |
-| -------------- | ------------------------------------ | ------------------------------------ |
-| `HOMEPAGE`     | Homepage link                        | `https://septs.blog/posts/rsp-dump/` |
-| `HOST_PATTERN` | Regexp for matching issuer from host | `^(?P<issuer>[a-f0-9]{6,40})\.rsp\.` |
-| `RSP_REGISTRY` | JSON registry for issuers            | Content of `rsp-registry.json`       |
-| `KV_NAMESPACE` | Cloudflare Workers KV namespace ID   | `rsp-dump`                           |
+[registry]: https://github.com/CursedHardware/gsma-rsp-certificates/raw/main/registry.csv
+
+| Variable       | Description                          | Default                                    |
+| -------------- | ------------------------------------ | ------------------------------------------ |
+| `HOMEPAGE`     | Homepage link                        | `https://septs.blog/posts/rsp-dump/`       |
+| `HOST_PATTERN` | Regexp for matching issuer from host | `^(?P<issuer>[a-f0-9]{6,40})\.rsp\.`       |
+| `RSP_REGISTRY` | JSON registry for issuers            | [`rsp-registry.json`][registry]            |
+| `KV_NAMESPACE` | Cloudflare Workers KV namespace ID   | `rsp-dump`                                 |
 
 ## Usage
 
@@ -16,6 +18,9 @@
 ```
 
 The `<matching-id>` is used as the key to store the report in KV.
+
+### Deploy
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/euicc-go/rsp-dump.git)
 
 ### KV Routes
 

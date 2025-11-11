@@ -6,7 +6,7 @@ before:
   hooks:
     - go mod tidy
     - go generate ./...
-    - python ./scripts/download-rsp-registry.py
+    - python -m scripts.setup
 
 builds:
   - id: rsp-dump
@@ -25,12 +25,23 @@ builds:
     env: [ CGO_ENABLED=0 ]
     flags: [ -trimpath ]
     ldflags: [ -s -w ]
+  - id: rsp-dump-cf-workers
+    main: ./cmd/rsp-dump-cf-workers
+    binary: app
+    goos: [ js ]
+    goarch: [ wasm ]
+    env: [ CGO_ENABLED=0 ]
+    flags: [ -trimpath ]
+    ldflags: [ -s -w ]
+    hooks:
+      pre:
+        - cmd: go run github.com/syumai/workers/cmd/workers-assets-gen -mode=go -o ./dist/rsp-dump-cf-workers_js_wasm 
 
 archives:
   - id: rsp-dump
     format: tar.gz
     builds: [ rsp-dump ]
-    name_template: "rsp-dump_{{ .Version }}_{{ .Arch }}"
+    name_template: "rsp-dump_{{ .Os }}_{{ .Version }}_{{ .Arch }}"
     wrap_in_directory: true
     files: [ rsp-*.json ]
   - id: rsp-dump-aws-lambda

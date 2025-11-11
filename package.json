@@ -1,0 +1,35 @@
+{
+  "name": "rsp-dump",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "setup:python": "python -m scripts.setup worker",
+    "setup:workers-assets-gen": "go run github.com/syumai/workers/cmd/workers-assets-gen -mode=go -o ./dist/rsp-dump-cf-workers_js_wasm",
+    "setup":"yarn setup:python && yarn setup:workers-assets-gen",
+    "build:go": "CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -trimpath -ldflags \"-s -w\" -o ./dist/rsp-dump-cf-workers_js_wasm/app.wasm ./cmd/rsp-dump-cf-workers",
+    "build": "yarn setup && yarn build:go",
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "start": "wrangler dev"
+  },
+  "devDependencies": {
+    "wrangler": "^3.109.2"
+  },
+  "cloudflare": {
+    "bindings": {
+      "HOMEPAGE": {
+        "description": "Homepage link"
+      },
+      "HOST_PATTERN": {
+        "description": "Regexp for matching issuer from host"
+      },
+      "RSP_REGISTRY": {
+        "description": "JSON registry for issuers"
+      },
+      "KV_NAMESPACE": {
+        "description": "Cloudflare Workers KV namespace"
+      }
+    }
+  },
+  "packageManager": "yarn@4.9.2+sha512.1fc009bc09d13cfd0e19efa44cbfc2b9cf6ca61482725eb35bbc5e257e093ebf4130db6dfe15d604ff4b79efd8e1e8e99b25fa7d0a6197c9f9826358d4d65c3c"
+}

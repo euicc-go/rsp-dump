@@ -1,6 +1,6 @@
 {
   "name": "rsp-dump",
-  "main": "./build/worker.mjs",
+  "main": "./dist/rsp-dump-cf-workers_js_wasm/worker.mjs",
   "compatibility_date": "2025-11-10",
   "build": {
     "command": "yarn run build"
@@ -9,8 +9,7 @@
     "logs": {
       "enabled": true,
       "head_sampling_rate": 1,
-      "invocation_logs": true,
-      "persist": true
+      "invocation_logs": true
     }
-}
+  }
 }
