@@ -1,6 +1,6 @@
 //go:build !wasm
 
-package dump
+package utils
 
 import (
 	"bytes"

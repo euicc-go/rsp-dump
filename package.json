@@ -3,17 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "setup:python": "python -m scripts.setup worker",
-    "setup:workers-assets-gen": "go run github.com/syumai/workers/cmd/workers-assets-gen -mode=go -o ./dist/rsp-dump-cf-workers_js_wasm",
-    "setup":"yarn setup:python && yarn setup:workers-assets-gen",
-    "build:go": "CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -trimpath -ldflags \"-s -w\" -o ./dist/rsp-dump-cf-workers_js_wasm/app.wasm ./cmd/rsp-dump-cf-workers",
-    "build": "yarn setup && yarn build:go",
+    "build": "python -m scripts.build",
     "deploy": "wrangler deploy",
     "dev": "wrangler dev",
     "start": "wrangler dev"
   },
   "devDependencies": {
-    "wrangler": "^3.109.2"
+    "wrangler": "^4.47.0"
   },
   "cloudflare": {
     "bindings": {
@@ -28,6 +24,9 @@
       },
       "KV_NAMESPACE": {
         "description": "Cloudflare Workers KV namespace"
+      },
+      "SMDP": {
+        "description": "Directly specify the issuer host"
       }
     }
   },

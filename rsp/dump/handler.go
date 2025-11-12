@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"math/rand/v2"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -21,7 +20,7 @@ import (
 type Handler struct {
 	Homepage       string
 	Client         *http.Client
-	Issuers        map[string][]string
+	GetIssuerHost  func(string) (string, error)
 	HostPattern    *regexp.Regexp
 	OnAuthenClient func(*TLV, *http.Client) error
 }
@@ -198,10 +197,11 @@ func (h *Handler) findHost(r *InitAuthenRequest) (issuer []byte, host string, er
 func (h *Handler) findBestMatchHost(r *InitAuthenRequest) (issuer []byte, host string, err error) {
 	err = errNotFound
 	for _, child := range r.Info1.First(Tag{0xAA}).Children {
-		if hosts, ok := h.Issuers[hex.EncodeToString(child.Value)]; ok {
+		keyId := hex.EncodeToString(child.Value)
+		if _host, e := h.GetIssuerHost(keyId); e == nil {
 			issuer = child.Value
-			host = hosts[rand.IntN(len(hosts))]
 			err = nil
+			host = _host
 			return
 		}
 	}
@@ -213,13 +213,11 @@ func (h *Handler) findSpecificHost(prefix string) (issuer []byte, host string, e
 	if len(prefix) == 0 {
 		return
 	}
-	for keyId, hosts := range h.Issuers {
-		if strings.HasPrefix(keyId, prefix) {
-			issuer, _ = hex.DecodeString(keyId)
-			host = hosts[rand.IntN(len(hosts))]
-			err = nil
-			return
-		}
+	if _host, e := h.GetIssuerHost(prefix); e == nil {
+		issuer, _ = hex.DecodeString(prefix)
+		host = _host
+		err = nil
+		return
 	}
 	return
 }

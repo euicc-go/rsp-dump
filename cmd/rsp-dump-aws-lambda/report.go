@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/CursedHardware/go-rsp-dump/rsp/dump"
+	"github.com/CursedHardware/go-rsp-dump/rsp/utils"
 	"github.com/euicc-go/bertlv"
 )
 
@@ -16,7 +17,7 @@ func onAuthenClient(response *bertlv.TLV, client *http.Client) (err error) {
 	if err = report.UnmarshalBerTLV(response); err != nil {
 		return
 	}
-	message := NewMailMessage(&report, config.HostTemplate)
+	message := utils.NewMailMessage(&report, config.HostTemplate)
 	message.SetHeaders(config.SMTPHeaders)
 	if !strings.Contains(report.MatchingID, "@") {
 		decoded, _ := base64.RawStdEncoding.DecodeString(report.MatchingID)

@@ -7,6 +7,7 @@ import (
 type Configuration struct {
 	Homepage     string
 	HostPattern  *regexp.Regexp
-	registryData string
+	RegistryData string
 	KVNamespace  string
+	SMDP        string
 }

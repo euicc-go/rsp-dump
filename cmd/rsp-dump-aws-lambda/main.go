@@ -4,14 +4,17 @@ import (
 	"crypto/tls"
 	_ "embed"
 	"encoding/json"
+	"fmt"
+	"log"
+	"math/rand/v2"
+	"net/http"
+	"os"
+	"regexp"
+
 	"github.com/CursedHardware/go-rsp-dump/rsp/dump"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/awslabs/aws-lambda-go-api-proxy/httpadapter"
 	"gopkg.in/mail.v2"
-	"log"
-	"net/http"
-	"os"
-	"regexp"
 )
 
 var config = Configuration{
@@ -42,14 +45,15 @@ func main() {
 	handler := &dump.Handler{
 		Homepage:       config.Homepage,
 		Client:         http.DefaultClient,
-		Issuers:        mustRSPRegistry(),
+		GetIssuerHost:  getIssuerHost,
 		HostPattern:    config.HostPattern,
 		OnAuthenClient: onAuthenClient,
 	}
 	lambda.Start(httpadapter.New(handler).ProxyWithContext)
 }
 
-func mustRSPRegistry() (issuers map[string][]string) {
+func getIssuerHost(keyId string) (string, error) {
+	var issuers map[string][]string
 	fp, err := os.Open("rsp-registry.json")
 	if err != nil {
 		panic(err)
@@ -57,5 +61,8 @@ func mustRSPRegistry() (issuers map[string][]string) {
 	if err = json.NewDecoder(fp).Decode(&issuers); err != nil {
 		panic(err)
 	}
-	return
+	if hosts, ok := issuers[keyId]; ok && len(hosts) > 0 {
+		return hosts[rand.IntN(len(hosts))], nil
+	}
+	return "", fmt.Errorf("issuer not found: %s", keyId)
 }

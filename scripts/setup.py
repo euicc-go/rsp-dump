@@ -3,7 +3,6 @@ import json
 from collections import defaultdict
 from scripts.utils import Manager, TaskType
 
-
 def setup_rsp_registry(manager: Manager):
     tasks = [
         {
@@ -63,23 +62,23 @@ def setup_certificate_dir(manager: Manager):
             "items": CERTIFICATE_ITEMS,
             "target_patterns": [
                 "./cmd/rsp-dump/certificate/{name}.pem",
-                "./cmd/rsp-dump-aws-lambda/certificate/{name}.pem",
-            ],
+            ]
         }
     ]
 
     manager.batch_process(tasks)
 
 
-def setup(worker: bool = True):
+def setup(worker:bool = False):
     manager = Manager()
     setup_rsp_registry(manager)
-    if not worker:
+    if worker:
+        pass
+    else:
         setup_certificate_dir(manager)
-
-
+        
 if __name__ == "__main__":
-    print("Start")
+    print("Setup Start")
     import sys
-
     setup(len(sys.argv) == 2 and sys.argv[1] == "worker")
+    print("Setup End")

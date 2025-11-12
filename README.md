@@ -8,7 +8,7 @@
 
 ## Cloudflare Workers
 
-- [on KV](cmd/rsp-dump-cf-workers)
+- [on KV](docs/cf-worker-readme.md)
 
 ## LICENSE
 

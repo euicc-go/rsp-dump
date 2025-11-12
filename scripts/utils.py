@@ -1,6 +1,8 @@
 from typing import Callable
 from enum import Enum, auto
 from pathlib import Path
+import os
+import subprocess
 
 class TaskType(Enum):
     single_content_multiple_files = auto()
@@ -91,3 +93,26 @@ class Manager:
                                 path,
                                 lambda c=content: c
                             )
+
+def run_command(cmd:list, env:dict=None):
+    try:
+        if env is not None:
+            env_combined = os.environ.copy()
+            env_combined.update(env)
+        else:
+            env_combined = None
+
+        result = subprocess.run(
+            cmd,
+            check=True,
+            capture_output=True,
+            text=True,
+            env=env_combined
+        )
+        if result.stdout:
+            print(result.stdout)
+        return True
+    except subprocess.CalledProcessError as e:
+        msg = f"Error:\ncmd: {' '.join(cmd)}\nstdout:{e.stdout}\nstderr:{e.stderr}"
+        print(msg)
+        return False

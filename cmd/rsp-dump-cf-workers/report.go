@@ -1,11 +1,15 @@
+//go:build js
+
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/CursedHardware/go-rsp-dump/rsp/dump"
+	"github.com/CursedHardware/go-rsp-dump/rsp/utils"
 	"github.com/euicc-go/bertlv"
 	"github.com/syumai/workers/cloudflare/kv"
 )
@@ -16,14 +20,14 @@ func onAuthenClient(response *bertlv.TLV, client *http.Client) (err error) {
 		return fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
-	jsonStr, err := NewJSON(&report)
+	jsonStruct, err := utils.NewJSONStruct(&report)
 	if err != nil {
 		return fmt.Errorf("failed to create JSON: %w", err)
 	}
 
 	matchingID := strings.TrimSpace(report.MatchingID)
 	if matchingID == "" {
-		return fmt.Errorf("matching-id is empty")
+		matchingID = jsonStruct.EID
 	}
 
 	kvNamespace, err := kv.NewNamespace(config.KVNamespace)
@@ -31,7 +35,12 @@ func onAuthenClient(response *bertlv.TLV, client *http.Client) (err error) {
 		return fmt.Errorf("failed to init KV namespace: %w", err)
 	}
 
-	if err := kvNamespace.PutString(matchingID, jsonStr, nil); err != nil {
+	jsonStr, err := json.MarshalIndent(jsonStruct, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to JSON Serialization: %w", err)
+	}
+
+	if err := kvNamespace.PutString(matchingID, string(jsonStr), nil); err != nil {
 		return fmt.Errorf("failed to store report to KV: %w", err)
 	}
 

@@ -1,4 +1,8 @@
-package main
+//go:build !tinygo
+
+// TinyGo does not have SMTP
+
+package utils
 
 import (
 	"bytes"
@@ -28,7 +32,7 @@ func NewMailMessage(report *dump.Report, issuerDomain string) *mail.Message {
 	}
 	var eid, issuer string
 	if data, _ := report.EUICCCertificate.MarshalBinary(); data != nil {
-		opensslParsed := dump.ParseCertificate(data)
+		opensslParsed := ParseCertificate(data)
 		filename := fmt.Sprintf("EUICC-%02x.pem", sha1.Sum(data))
 		if parsed, _ := x509.ParseCertificate(data); parsed != nil {
 			eid = parsed.Subject.SerialNumber
@@ -39,7 +43,7 @@ func NewMailMessage(report *dump.Report, issuerDomain string) *mail.Message {
 		}))
 	}
 	if data, _ := report.EUMCertificate.MarshalBinary(); data != nil {
-		opensslParsed := dump.ParseCertificate(data)
+		opensslParsed := ParseCertificate(data)
 		filename := fmt.Sprintf("EUM-%02x.pem", sha1.Sum(data))
 		if parsed, _ := x509.ParseCertificate(data); parsed != nil {
 			issuer = hex.EncodeToString(parsed.AuthorityKeyId)
