@@ -6,7 +6,7 @@ from scripts.utils import Manager, TaskType
 def setup_rsp_registry(manager: Manager):
     tasks = [
         {
-            "type": TaskType.single_content_multiple_files,
+            "type": TaskType.S2M,
             "url": "https://github.com/CursedHardware/gsma-rsp-certificates/raw/main/registry.csv",
             "target_files": [
                 "./cmd/rsp-dump-cf-workers/rsp-registry.json",
@@ -41,7 +41,7 @@ def process_registry_content(csv_content: str) -> str:
 
     sorted_issuers = {issuer: sorted(addrs) for issuer, addrs in issuers.items() if addrs}
 
-    return json.dumps(sorted_issuers, sort_keys=True, indent=2)
+    return json.dumps(sorted_issuers, sort_keys=True)
 
 
 def setup_certificate_dir(manager: Manager):
@@ -58,7 +58,7 @@ def setup_certificate_dir(manager: Manager):
 
     tasks = [
         {
-            "type": TaskType.multiple_contents_multiple_files,
+            "type": TaskType.M2M,
             "items": CERTIFICATE_ITEMS,
             "target_patterns": [
                 "./cmd/rsp-dump/certificate/{name}.pem",
@@ -80,5 +80,13 @@ def setup(worker:bool = False):
 if __name__ == "__main__":
     print("Setup Start")
     import sys
-    setup(len(sys.argv) == 2 and sys.argv[1] == "worker")
+    if len(sys.argv) == 2:
+        if sys.argv[1] == "worker":
+            setup(worker=True)
+        elif sys.argv[1] == "rsp":
+            setup_rsp_registry(Manager())
+        else:
+            setup()            
+    else:
+        print("Invalid arguments")
     print("Setup End")

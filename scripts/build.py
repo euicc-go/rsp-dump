@@ -8,7 +8,7 @@ def main(mode:BuildType):
     
 def print_help():
     print("Usage:")
-    print("  yarn build -- <build_type>")
+    print("  yarn build <build_type>")
     print("")
     print("Available build types:")
     for b in BuildType:

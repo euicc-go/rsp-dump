@@ -4,16 +4,16 @@ import (
 	"crypto/tls"
 	_ "embed"
 	"encoding/json"
-	"fmt"
 	"log"
-	"math/rand/v2"
 	"net/http"
 	"os"
 	"regexp"
 
 	"github.com/CursedHardware/go-rsp-dump/rsp/dump"
+	"github.com/CursedHardware/go-rsp-dump/rsp/types"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/awslabs/aws-lambda-go-api-proxy/httpadapter"
+	"github.com/euicc-go/bertlv"
 	"gopkg.in/mail.v2"
 )
 
@@ -45,15 +45,13 @@ func main() {
 	handler := &dump.Handler{
 		Homepage:       config.Homepage,
 		Client:         http.DefaultClient,
-		GetIssuerHost:  getIssuerHost,
-		HostPattern:    config.HostPattern,
+		OnInitAuthen:   onInitAuthen,
 		OnAuthenClient: onAuthenClient,
 	}
 	lambda.Start(httpadapter.New(handler).ProxyWithContext)
 }
 
-func getIssuerHost(keyId string) (string, error) {
-	var issuers map[string][]string
+func mustRSPRegistry() (issuers map[string][]string) {
 	fp, err := os.Open("rsp-registry.json")
 	if err != nil {
 		panic(err)
@@ -61,8 +59,20 @@ func getIssuerHost(keyId string) (string, error) {
 	if err = json.NewDecoder(fp).Decode(&issuers); err != nil {
 		panic(err)
 	}
-	if hosts, ok := issuers[keyId]; ok && len(hosts) > 0 {
-		return hosts[rand.IntN(len(hosts))], nil
+	return
+}
+
+func onInitAuthen(svn *bertlv.TLV, r *types.InitAuthenRequest) error {
+	registry := mustRSPRegistry()
+
+	if issuer, hostTmp, errTmp := dump.FindIssuerFromHost(r.Address, config.HostPattern, registry); errTmp == nil {
+		r.Info1 = dump.NewInfo1(issuer, svn, r.Info1.Tag)
+		r.Address = hostTmp
+	} else if issuer, hostTmp, errTmp := dump.FindIssuerFromIssuers(dump.GetIssuersFromInfo1(r.Info1), registry); errTmp == nil {
+		r.Info1 = dump.NewInfo1(issuer, svn, r.Info1.Tag)
+		r.Address = hostTmp
+	} else {
+		return dump.ErrNotFound
 	}
-	return "", fmt.Errorf("issuer not found: %s", keyId)
+	return nil
 }

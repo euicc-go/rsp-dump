@@ -4,7 +4,7 @@
   "main": "./dist/rsp-dump-cf-workers_js_wasm/worker.mjs",
   "compatibility_date": "2025-11-10",
   "build": {
-    "command": "yarn run build -- go"
+    "command": "yarn run build go"
   },
   "observability": {
     "logs": {
