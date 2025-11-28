@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strings"
 
 	. "github.com/CursedHardware/go-rsp-dump/rsp/types"
@@ -20,8 +19,7 @@ import (
 type Handler struct {
 	Homepage       string
 	Client         *http.Client
-	GetIssuerHost  func(string) (string, error)
-	HostPattern    *regexp.Regexp
+	OnInitAuthen   func(*TLV, *InitAuthenRequest) error
 	OnAuthenClient func(*TLV, *http.Client) error
 }
 
@@ -45,7 +43,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "/asn1":
 		var request *TLV
 		if _, err = request.ReadFrom(r.Body); err == nil {
-			_, _ = h.handleASN1(request).WriteTo(w)
+			_, _ = h.handleASN1(request, r.Host).WriteTo(w)
 		}
 	case "/es9plus/initiateAuthentication":
 		var request InitAuthenRequest
@@ -53,8 +51,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if err = decoder.Decode(&request); err != nil {
 			goto errorHandling
 		}
-		if response, err = h.handleInitAuthen(&request); err == nil {
+		if response, err = h.handleInitAuthen(&request, r.Host); err == nil {
 			_ = encoder.Encode(response)
+		} else {
+			goto errorHandling
 		}
 	case "/es9plus/authenticateClient":
 		var request AuthenClientRequest
@@ -76,20 +76,21 @@ errorHandling:
 	}
 }
 
-func (h *Handler) handleInitAuthen(r *InitAuthenRequest) (resp *InitAuthenResponse, err error) {
-	u := &url.URL{Scheme: "https", Path: "/gsma/rsp2/es9plus/initiateAuthentication"}
-	var issuer []byte
-	if issuer, u.Host, err = h.findHost(r); err != nil {
+func (h *Handler) handleInitAuthen(r *InitAuthenRequest, selfHost string) (resp *InitAuthenResponse, err error) {
+	svn := GetSVNFromInfo1(r.Info1)
+
+	if h.OnInitAuthen != nil {
+		if err = h.OnInitAuthen(svn, r); err != nil {
+			return
+		}
+	}
+
+	if r.Address == selfHost {
+		err = fmt.Errorf("net loop (%s)", r.Address)
 		return
 	}
-	svn := r.Info1.First(Tag{0x82})
-	r.Info1 = NewChildren(
-		r.Info1.Tag,
-		svn,
-		NewChildren(Tag{0xA9}, NewValue(Tag{0x04}, issuer)),
-		NewChildren(Tag{0xAA}, NewValue(Tag{0x04}, issuer)),
-	)
-	r.Address = u.Host
+
+	u := &url.URL{Scheme: "https", Host: r.Address, Path: "/gsma/rsp2/es9plus/initiateAuthentication"}
 	body, _ := json.Marshal(r)
 	request, _ := http.NewRequest(http.MethodPost, u.String(), bytes.NewReader(body))
 	request.Header.Set("User-Agent", "gsma-rsp-lpad")
@@ -97,21 +98,21 @@ func (h *Handler) handleInitAuthen(r *InitAuthenRequest) (resp *InitAuthenRespon
 	request.Header.Set("X-Admin-Protocol", fmt.Sprintf("gsma/rsp/v%d.%d.%d", svn.Value[0], svn.Value[1], svn.Value[2]))
 	response, err := h.Client.Do(request)
 	if err != nil {
+		err = fmt.Errorf("failed to send InitiateAuthentication request: %w", err)
 		return
 	}
+	defer response.Body.Close()
+
 	resp = new(InitAuthenResponse)
 	if err = json.NewDecoder(response.Body).Decode(resp); err != nil {
 		return
 	}
-	if resp.UsedIssuer == nil || !bytes.Equal(issuer, resp.UsedIssuer.Value) {
-		err = fmt.Errorf("InitiateAuthenticationResponse: issuer is mismatch (%s)", r.Address)
-		return
-	}
+
 	log.Println(
 		"ES9+.InitiateAuthenticationResponse",
 		"TransactionId:", resp.TransactionId,
 		"Host:", u.Host,
-		"Issuer:", hex.EncodeToString(issuer),
+		"Info1", hex.EncodeToString(r.Info1.Value),
 	)
 	return
 }
@@ -150,13 +151,13 @@ func (h *Handler) handleAuthenClient(r *AuthenClientRequest) (_ *GeneralResponse
 	return
 }
 
-func (h *Handler) handleASN1(request *TLV) *TLV {
+func (h *Handler) handleASN1(request *TLV, selfHost string) *TLV {
 	if r := request.First(Tag{0xBF, 0x39}); r != nil {
 		authen, err := h.handleInitAuthen(&InitAuthenRequest{
 			Challenge: r.First(Tag{0x81}).Value,
 			Address:   string(r.First(Tag{0x83}).Value),
 			Info1:     r.First(Tag{0xBF, 0x20}),
-		})
+		}, selfHost)
 		if err != nil {
 			return nil
 		}
@@ -180,44 +181,4 @@ func (h *Handler) handleASN1(request *TLV) *TLV {
 		})
 	}
 	return nil
-}
-
-func (h *Handler) findHost(r *InitAuthenRequest) (issuer []byte, host string, err error) {
-	if h.HostPattern == nil {
-		return h.findBestMatchHost(r)
-	}
-	index := h.HostPattern.SubexpIndex("issuer")
-	matches := h.HostPattern.FindStringSubmatch(r.Address)
-	if index == -1 || matches == nil {
-		return h.findBestMatchHost(r)
-	}
-	return h.findSpecificHost(strings.ToLower(matches[index]))
-}
-
-func (h *Handler) findBestMatchHost(r *InitAuthenRequest) (issuer []byte, host string, err error) {
-	err = errNotFound
-	for _, child := range r.Info1.First(Tag{0xAA}).Children {
-		keyId := hex.EncodeToString(child.Value)
-		if _host, e := h.GetIssuerHost(keyId); e == nil {
-			issuer = child.Value
-			err = nil
-			host = _host
-			return
-		}
-	}
-	return
-}
-
-func (h *Handler) findSpecificHost(prefix string) (issuer []byte, host string, err error) {
-	err = errNotFound
-	if len(prefix) == 0 {
-		return
-	}
-	if _host, e := h.GetIssuerHost(prefix); e == nil {
-		issuer, _ = hex.DecodeString(prefix)
-		host = _host
-		err = nil
-		return
-	}
-	return
 }

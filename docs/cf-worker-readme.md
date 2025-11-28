@@ -4,12 +4,13 @@
 
 [registry]: https://github.com/CursedHardware/gsma-rsp-certificates/raw/main/registry.csv
 
-| Variable       | Description                          | Default                              |
-| -------------- | ------------------------------------ | ------------------------------------ |
-| `HOMEPAGE`     | Homepage link                        | `https://septs.blog/posts/rsp-dump/` |
-| `HOST_PATTERN` | Regexp for matching issuer from host | `^(?P<issuer>[a-f0-9]{6,40})\.rsp\.` |
-| `KV_NAMESPACE` | Cloudflare Workers KV namespace ID   | `rsp-dump`                           |
-| `SMDP`         | Directly specify the issuer host     | `null`                               |
+| Variable       | Description                          | Default                                                                              |
+| -------------- | ------------------------------------ | ------------------------------------------------------------------------------------ |
+| `HOMEPAGE`     | Homepage link                        | `https://github.com/euicc-go/rsp-dump/blob/main/docs/cf-worker-readme.md`            |
+| `KV_NAMESPACE` | Cloudflare Workers KV namespace ID   | `rsp-dump`                                                                           |
+| `HOST_PATTERN` | Regexp for matching issuer from host | `^(?P<issuer>[a-f0-9]{6,40})\.rsp\.`                                                 |
+| `SMDP`         | Directly specify the issuer host     | `null`                                                                               |
+| `KEY_ID`       | Directly specify the issuer key ID   | `nil`                                                                                |
 | `RSP_REGISTRY` | JSON registry for issuers            |[`rsp-registry.json`][registry] from [`process_registry_content`](../scripts/setup.py)|
 
 ## Usage
@@ -36,6 +37,6 @@ Cloudflare Workers exposes the following routes to interact with the KV store:
 ## Notes
 
 * `RSP_REGISTRY` should be a valid JSON string.
-* Ensure the domain is bound and the TLS mode is set to `Off` / `Flexible` / `Full`.
+* Ensure the domain is bound and the TLS mode is set to `Off`.
 * If `matching-id` is not provided, **EID** will be used **automatically**
 * The `matching-id` should be a unique identifier (can be a UUID or custom string).

@@ -5,8 +5,8 @@ import os
 import subprocess
 
 class TaskType(Enum):
-    single_content_multiple_files = auto()
-    multiple_contents_multiple_files = auto()
+    S2M = auto()
+    M2M = auto()
     
 def get_text_from_url(url:str) -> str:
     import urllib.request
@@ -48,12 +48,12 @@ class Manager:
         urls_to_download: set[str] = set()
         
         for task in tasks:
-            if task["type"] == TaskType.single_content_multiple_files:
+            if task["type"] == TaskType.S2M:
                 all_exist = all(Path(file_path).exists() for file_path in task["target_files"])
                 if not all_exist:
                     urls_to_download.add(task["url"])
             
-            elif task["type"] == TaskType.multiple_contents_multiple_files:
+            elif task["type"] == TaskType.M2M:
                 for item in task["items"]:
                     all_exist = all(
                         Path(file_pattern.format(**item)).exists() 
@@ -66,7 +66,7 @@ class Manager:
             self.download_once(url)
         
         for task in tasks:
-            if task["type"] == TaskType.single_content_multiple_files:
+            if task["type"] == TaskType.S2M:
                 content = self._cache.get(task["url"])
                 if content:
                     if "processor" in task:
@@ -79,7 +79,7 @@ class Manager:
                             lambda c=content: c
                         )
             
-            elif task["type"] == TaskType.multiple_contents_multiple_files:
+            elif task["type"] == TaskType.M2M:
                 for item in task["items"]:
                     content = self._cache.get(item["url"])
                     if content:
